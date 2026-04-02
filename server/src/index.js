@@ -4,9 +4,10 @@ const express = require('express')
 const http = require('http')
 const cors = require('cors')
 const { Server: SocketServer } = require('socket.io')
-const connectDB = require('./lib/db')
 const redis = require('./lib/redis')
+const connectDB = require('./lib/db')
 const authRoutes = require('./routes/auth.routes')
+const { setupSocket } = require('./socket/socket.handler')
 
 // Connect to MongoDB
 connectDB()
@@ -16,30 +17,31 @@ const httpServer = http.createServer(app)
 
 const io = new SocketServer(httpServer, {
   cors: {
-    origin: '*',
-    methods: ['GET', 'POST']
+    origin: 'http://localhost:5173',
+    methods: ['GET', 'POST'],
+    credentials: true
   }
 })
 
-app.use(cors())
+app.use(cors({
+  origin: 'http://localhost:5173',
+  credentials: true
+}))
 app.use(express.json())
 
-// ── Routes ────────────────────────────────────────────
+// ── Routes ─────────────────────────────────────────────
 app.get('/', (req, res) => {
   res.json({ message: '🚀 Chat server is running!' })
 })
 app.use('/auth', authRoutes)
+const userRoutes = require('./routes/user.route')
+app.use('/users', userRoutes)
 
-// ── Socket.io ─────────────────────────────────────────
-io.on('connection', (socket) => {
-  console.log(`⚡ New client connected: ${socket.id}`)
-  socket.on('disconnect', () => {
-    console.log(`🔴 Client disconnected: ${socket.id}`)
-  })
-})
+// ── Socket.io ──────────────────────────────────────────
+setupSocket(io)
 
+// ── Start Server ───────────────────────────────────────
 const PORT = process.env.PORT || 3000
-
 httpServer.listen(PORT, () => {
   console.log(`✅ Server running on http://localhost:${PORT}`)
 })
