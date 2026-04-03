@@ -17,14 +17,14 @@ const httpServer = http.createServer(app)
 
 const io = new SocketServer(httpServer, {
   cors: {
-    origin: '*',
+    origin: 'https://chat-app-two-flame-52.vercel.app',
     methods: ['GET', 'POST'],
     credentials: true
   }
 })
 
 app.use(cors({
-  origin: '*',
+  origin: 'https://chat-app-two-flame-52.vercel.app',
   credentials: true
 }))
 app.use(express.json())
