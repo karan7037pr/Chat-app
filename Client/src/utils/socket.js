@@ -5,7 +5,7 @@ let socket = null
 export const connectSocket = () => {
   const token = localStorage.getItem('token')
 
-  socket = io('http://localhost:3000', {
+  socket = io('https://chat-app-server-7esk.onrender.com', {
     auth: { token }
   })
 

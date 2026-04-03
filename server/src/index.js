@@ -17,14 +17,14 @@ const httpServer = http.createServer(app)
 
 const io = new SocketServer(httpServer, {
   cors: {
-    origin: 'http://localhost:5173',
+    origin: '*',
     methods: ['GET', 'POST'],
     credentials: true
   }
 })
 
 app.use(cors({
-  origin: 'http://localhost:5173',
+  origin: '*',
   credentials: true
 }))
 app.use(express.json())
