@@ -1,5 +1,9 @@
 # CHAT. — Real-time Chat Application
 
+LINK :- https://chat-app-two-flame-52.vercel.app/
+
+GO to this link for getting hands on this web app
+
 A full-stack real-time chat application built with Node.js, Socket.io, MongoDB, and React.
 
 ![Node.js](https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)
