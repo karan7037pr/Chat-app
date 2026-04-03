@@ -28,10 +28,8 @@ export default function Chat() {
       console.error("Socket error:", err.message);
     });
 
-    // Receive new message
     socket.on("receive_message", (message) => {
       setMessages((prev) => {
-        // Only add if it belongs to current conversation
         if (
           message.senderId === selectedUserRef.current?._id ||
           message.receiverId === selectedUserRef.current?._id
@@ -42,17 +40,14 @@ export default function Chat() {
       });
     });
 
-    // Message sent confirmation
     socket.on("message_sent", (message) => {
       setMessages((prev) => [...prev, message]);
     });
 
-    // Online users list
     socket.on("online_users", (userIds) => {
       setOnlineUsers(userIds);
     });
 
-    // User comes online/goes offline
     socket.on("user_status", ({ userId, status }) => {
       setOnlineUsers((prev) =>
         status === "online"
@@ -61,7 +56,6 @@ export default function Chat() {
       );
     });
 
-    // Typing indicators
     socket.on("user_typing", ({ userId }) => {
       if (userId === selectedUserRef.current?._id) {
         setTypingUser(userId);
@@ -74,7 +68,6 @@ export default function Chat() {
       }
     });
 
-    // Chat history
     socket.on("chat_history", (history) => {
       setMessages(history);
     });
@@ -82,18 +75,15 @@ export default function Chat() {
     return () => disconnectSocket();
   }, []);
 
-  // Keep a ref to selectedUser so socket callbacks can access it
   const selectedUserRef = useRef(selectedUser);
   useEffect(() => {
     selectedUserRef.current = selectedUser;
   }, [selectedUser]);
 
-  // ── Fetch all users ──────────────────────────────────
   useEffect(() => {
     api.get("/users").then((res) => setUsers(res.data));
   }, []);
 
-  // ── Load chat history when user is selected ──────────
   useEffect(() => {
     if (!selectedUser) return;
     const socket = getSocket();
@@ -102,12 +92,10 @@ export default function Chat() {
     }
   }, [selectedUser]);
 
-  // ── Auto scroll to bottom ────────────────────────────
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // ── Send message ─────────────────────────────────────
   const sendMessage = () => {
     if (!text.trim() || !selectedUser) return;
     const socket = getSocket();
@@ -119,7 +107,6 @@ export default function Chat() {
     socket.emit("stop_typing", { receiverId: selectedUser._id });
   };
 
-  // ── Typing indicator ─────────────────────────────────
   const handleTyping = (e) => {
     setText(e.target.value);
     const socket = getSocket();
@@ -143,14 +130,14 @@ export default function Chat() {
     <div style={s.root}>
       <style>{css}</style>
 
-      {/* Overlay for mobile */}
+      {/* Overlay — only visible on mobile when sidebar is open */}
       <div
         className={`overlay ${sidebarOpen ? "show" : ""}`}
         onClick={() => setSidebarOpen(false)}
       />
 
       {/* Sidebar */}
-      <div style={s.sidebar} className={`sidebar ${sidebarOpen ? "open" : ""}`}>
+      <div className={`sidebar ${sidebarOpen ? "open" : ""}`} style={s.sidebar}>
         <div style={s.sidebarHeader}>
           <div>
             <div style={s.logoText}>
@@ -201,11 +188,10 @@ export default function Chat() {
         </div>
       </div>
 
-      {/* Chat Area */}
-      <div style={s.chatArea} className="chat-area">
+      {/* Chat Area — always full width on mobile */}
+      <div style={s.chatArea}>
         {!selectedUser ? (
           <div style={s.emptyState}>
-            {/* Mobile menu button */}
             <button
               onClick={() => setSidebarOpen(true)}
               style={s.menuBtn}
@@ -220,11 +206,11 @@ export default function Chat() {
         ) : (
           <>
             <div style={s.chatHeader}>
-              {/* Mobile back button */}
               <button
                 onClick={() => setSidebarOpen(true)}
                 style={s.backBtn}
                 className="back-btn"
+                aria-label="Open conversations"
               >
                 ☰
               </button>
@@ -342,12 +328,14 @@ const s = {
     fontFamily: "'Instrument Sans', 'Helvetica Neue', sans-serif",
     overflow: "hidden",
   },
+  // Sidebar base styles (desktop only — mobile handled entirely via CSS)
   sidebar: {
     width: "280px",
     borderRight: "1px solid #e5e7eb",
     display: "flex",
     flexDirection: "column",
     background: "#ffffff",
+    flexShrink: 0,
   },
   sidebarHeader: {
     padding: "24px 20px",
@@ -410,28 +398,6 @@ const s = {
     transition: "background 0.15s",
     marginBottom: "2px",
   },
-  menuBtn: {
-    display: "none",
-    padding: "10px 20px",
-    background: "#0a0a0a",
-    color: "#fff",
-    border: "none",
-    borderRadius: "10px",
-    fontSize: "14px",
-    cursor: "pointer",
-    marginBottom: "16px",
-    fontFamily: "inherit",
-  },
-  backBtn: {
-    display: "none",
-    background: "transparent",
-    border: "none",
-    fontSize: "20px",
-    cursor: "pointer",
-    marginRight: "4px",
-    padding: "4px 8px",
-  },
-
   userItemActive: {
     background: "#f3f4f6",
   },
@@ -479,6 +445,7 @@ const s = {
     display: "flex",
     flexDirection: "column",
     overflow: "hidden",
+    minWidth: 0,
   },
   emptyState: {
     flex: 1,
@@ -596,6 +563,29 @@ const s = {
     transition: "all 0.2s",
     flexShrink: 0,
   },
+  // These are hidden on desktop, shown via CSS on mobile
+  menuBtn: {
+    display: "none",
+    padding: "10px 20px",
+    background: "#0a0a0a",
+    color: "#fff",
+    border: "none",
+    borderRadius: "10px",
+    fontSize: "14px",
+    cursor: "pointer",
+    marginBottom: "16px",
+    fontFamily: "inherit",
+  },
+  backBtn: {
+    display: "none",
+    background: "transparent",
+    border: "none",
+    fontSize: "20px",
+    cursor: "pointer",
+    marginRight: "4px",
+    padding: "4px 8px",
+    flexShrink: 0,
+  },
 };
 
 const css = `
@@ -606,10 +596,7 @@ const css = `
   .msg-appear {
     animation: msgIn 0.25s cubic-bezier(0.16,1,0.3,1) both;
   }
-  @media (max-width: 768px) {
-  .menu-btn { display: block !important; }
-  .back-btn { display: block !important; }
-  }
+
   @keyframes msgIn {
     from { opacity: 0; transform: translateY(8px); }
     to   { opacity: 1; transform: translateY(0); }
@@ -644,4 +631,51 @@ const css = `
   ::-webkit-scrollbar { width: 4px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 4px; }
+
+  /* ── Overlay ── */
+  .overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.4);
+    z-index: 99;
+    opacity: 0;
+    transition: opacity 0.25s;
+  }
+
+  /* ── Mobile: sidebar becomes a fixed drawer ── */
+  @media (max-width: 768px) {
+    .menu-btn { display: block !important; }
+    .back-btn { display: block !important; }
+
+    /* Sidebar is pulled off-screen by default */
+    .sidebar {
+      position: fixed !important;
+      top: 0;
+      left: 0;
+      height: 100% !important;
+      width: 280px !important;
+      z-index: 100;
+      transform: translateX(-100%);
+      transition: transform 0.3s cubic-bezier(0.16,1,0.3,1);
+      box-shadow: 4px 0 24px rgba(0,0,0,0.08);
+    }
+
+    /* Sidebar slides in when open */
+    .sidebar.open {
+      transform: translateX(0);
+    }
+
+    /* Overlay visible when sidebar is open */
+    .overlay {
+      display: block;
+    }
+    .overlay.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .overlay:not(.show) {
+      pointer-events: none;
+    }
+  }
 `;
